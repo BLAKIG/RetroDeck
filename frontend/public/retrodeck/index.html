@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RetroDeck — Legacy Line</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="deck" data-testid="deck">
+    <!-- CRT overlay -->
+    <div id="crt" class="crt-overlay"></div>
+    <div id="scanlines" class="scanlines"></div>
+    <div id="vignette" class="vignette"></div>
+
+    <!-- BOOT SCREEN -->
+    <section id="boot-screen" class="screen active" data-testid="boot-screen">
+      <div class="boot-inner">
+        <div class="logo" data-testid="boot-logo">
+          <span class="logo-r">R</span><span class="logo-e">E</span><span class="logo-t">T</span><span class="logo-r2">R</span><span class="logo-o">O</span><span class="logo-d">D</span><span class="logo-e2">E</span><span class="logo-c">C</span><span class="logo-k">K</span>
+        </div>
+        <div class="tagline">est. 1999 &mdash; still updating</div>
+        <div class="boot-log" id="boot-log" data-testid="boot-log"></div>
+        <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+        <div class="press-start blink" id="press-start" data-testid="press-start">&#9654; PRESS START</div>
+      </div>
+    </section>
+
+    <!-- HOME SCREEN -->
+    <section id="home-screen" class="screen" data-testid="home-screen">
+      <div class="home-topbar">
+        <div class="topbar-left">RETRODECK OS v2.6 <span class="dot">&bull;</span> LEGACY LINE</div>
+        <div class="topbar-right">
+          <span class="pill" data-testid="pill-notifications">NOTIFICATIONS: OFF</span>
+          <span class="pill" data-testid="pill-cloud">CLOUD SYNC: LOCAL</span>
+          <span class="pill batt" data-testid="pill-battery">&#9210; 84%</span>
+          <span class="clock" id="home-clock" data-testid="home-clock">00:00</span>
+        </div>
+      </div>
+
+      <div class="home-title" data-testid="home-title">CARTRIDGE SHELF</div>
+      <div class="home-sub">3 games installed &bull; 0 pending updates (just like the good old days)</div>
+
+      <div class="cart-shelf" id="cart-shelf" data-testid="cart-shelf"></div>
+
+      <div class="home-hint">
+        <span>&#9664; &#9654; navigate</span>
+        <span>ENTER to inspect</span>
+        <span>ESC to power off (jk it's a webpage)</span>
+      </div>
+    </section>
+
+    <!-- DETAIL SCREEN -->
+    <section id="detail-screen" class="screen" data-testid="detail-screen">
+      <button class="back-btn" id="detail-back" data-testid="detail-back">&larr; SHELF</button>
+      <div class="detail-inner">
+        <div class="detail-cart" id="detail-cart"></div>
+        <div class="detail-info">
+          <div class="detail-title" id="detail-title" data-testid="detail-title"></div>
+          <div class="detail-tagline" id="detail-tagline"></div>
+          <div class="detail-meta" id="detail-meta"></div>
+          <div class="detail-lore" id="detail-lore" data-testid="detail-lore"></div>
+          <div class="detail-controls" id="detail-controls"></div>
+          <button class="insert-btn" id="insert-btn" data-testid="insert-btn">&gt; INSERT CARTRIDGE</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME SCREEN -->
+    <section id="game-screen" class="screen" data-testid="game-screen">
+      <div class="game-chrome-top">
+        <button class="back-btn" id="game-eject" data-testid="game-eject">&#9210; EJECT</button>
+        <div class="chrome-title" id="chrome-title"></div>
+        <div class="chrome-info" id="chrome-info"></div>
+      </div>
+      <div class="game-frame" id="game-frame" data-testid="game-frame"></div>
+    </section>
+  </div>
+
+  <audio id="menu-music" src="assets/audio/menu.mp3" loop preload="auto"></audio>
+
+  <script src="js/boot.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/detail.js"></script>
+  <script src="js/games/overdrive.js"></script>
+  <script src="js/games/gravityhop.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

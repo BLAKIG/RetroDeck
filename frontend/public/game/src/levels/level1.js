@@ -40,6 +40,16 @@
     { x: 6.5,  y: 17.5, type: 'guard' },
     { x: 15.5, y: 15.5, type: 'guard' },
     { x: 10.5, y: 17.5, type: 'soldier' },
+    // Doubled: additional 9 enemies
+    { x: 3.5,  y: 3.5,  type: 'soldier' },
+    { x: 7.5,  y: 7.5,  type: 'guard' },
+    { x: 11.5, y: 10.5, type: 'soldier' },
+    { x: 17.5, y: 3.5,  type: 'guard' },
+    { x: 22.5, y: 8.5,  type: 'guard' },
+    { x: 4.5,  y: 15.5, type: 'soldier' },
+    { x: 13.5, y: 13.5, type: 'guard' },
+    { x: 19.5, y: 11.5, type: 'soldier' },
+    { x: 8.5,  y: 3.5,  type: 'guard' },
   ];
 
   const pickups = [

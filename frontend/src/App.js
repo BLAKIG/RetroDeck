@@ -24,7 +24,7 @@ function App() {
         ref={frameRef}
         data-testid="game-iframe"
         title="DOOMFALL"
-        src="/game/index.html"
+        src="/retrodeck/index.html"
         style={{
           width: "100vw",
           height: "100vh",
