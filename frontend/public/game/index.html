@@ -83,6 +83,34 @@
     <!-- Pickup toast (bottom-center message) -->
     <div id="toast" class="hidden" data-testid="toast"></div>
 
+    <!-- Objective banner (top-center) with an arrow pointing at the goal. -->
+    <div id="objective" class="hidden" data-testid="objective">
+      <div class="obj-arrow" id="obj-arrow">▲</div>
+      <div class="obj-text">
+        <div class="obj-title">OBJECTIVE</div>
+        <div class="obj-name" id="obj-name" data-testid="obj-name">Find Rick Astley</div>
+        <div class="obj-dist" id="obj-dist" data-testid="obj-dist">-- m</div>
+      </div>
+    </div>
+
+    <!-- Level transition (fade + big level text) -->
+    <div id="level-transition" class="hidden" data-testid="level-transition">
+      <div class="lt-inner">
+        <div class="lt-sub" id="lt-sub">LEVEL COMPLETE</div>
+        <div class="lt-title" id="lt-title" data-testid="lt-title">LEVEL 2</div>
+        <div class="lt-hint" id="lt-hint">The swamp awaits...</div>
+      </div>
+    </div>
+
+    <!-- End credits (post-Shrek) -->
+    <div id="credits" class="hidden" data-testid="credits">
+      <div class="credits-inner">
+        <div class="credits-title">MISSION COMPLETE</div>
+        <div class="credits-body" id="credits-body"></div>
+        <button id="credits-restart" data-testid="credits-restart" class="cta">PLAY AGAIN</button>
+      </div>
+    </div>
+
     <div id="damage-flash" data-testid="damage-flash"></div>
     <div id="crosshair" data-testid="crosshair"></div>
 
@@ -129,16 +157,7 @@
   <script src="src/weapons/arsenal.js"></script>
   <script src="src/weapons/killstreak.js"></script>
   <script src="src/levels/level1.js"></script>
-  <script src="src/audio/sound.js"></script>
-  <script src="src/ui/hud.js"></script>
-  <script src="src/main.js"></script>
-</body>
-</html>
-cript src="src/entities/loot.js"></script>
-  <script src="src/weapons/pistol.js"></script>
-  <script src="src/weapons/arsenal.js"></script>
-  <script src="src/weapons/killstreak.js"></script>
-  <script src="src/levels/level1.js"></script>
+  <script src="src/levels/level2.js"></script>
   <script src="src/audio/sound.js"></script>
   <script src="src/ui/hud.js"></script>
   <script src="src/main.js"></script>

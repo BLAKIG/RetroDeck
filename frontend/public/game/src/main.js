@@ -23,6 +23,17 @@
   const damageIndicator = document.getElementById('damage-indicator');
   const lowHealth = document.getElementById('low-health');
   const toast = document.getElementById('toast');
+  const objectiveEl = document.getElementById('objective');
+  const objArrow = document.getElementById('obj-arrow');
+  const objName = document.getElementById('obj-name');
+  const objDist = document.getElementById('obj-dist');
+  const levelTransition = document.getElementById('level-transition');
+  const ltSub = document.getElementById('lt-sub');
+  const ltTitle = document.getElementById('lt-title');
+  const ltHint = document.getElementById('lt-hint');
+  const creditsEl = document.getElementById('credits');
+  const creditsBody = document.getElementById('credits-body');
+  const creditsRestart = document.getElementById('credits-restart');
 
   // Set logical size to match visible area for sharp raycast target
   function fitCanvas() {
@@ -80,31 +91,15 @@
     lastFootstep: 0
   };
 
-  function initLevel() {
-    const L = LEVEL1;
-    game.map = L.map;
-    game.player = new Player(L.start.x, L.start.y, L.start.angle);
-    game.player.armor = 0;
-    game.player.ammo = 999; // legacy field (unused now that Arsenal owns ammo).
-    game.enemies = L.enemies.map(e => new Enemy(e.x, e.y, e.type));
-    game.pickups = L.pickups.map(p => ({ ...p, tex: TEX.get(p.type), scale: 0.6, alive: true }));
-    // Extra loot pool populated by enemy drops.
-    game.loot = [];
-    game.arsenal = new Arsenal();
-    game.weapon = game.arsenal.current();
-    game.streak = new KillStreak();
-    game.buffs = new Buffs();
-    game.barrels = (L.barrels || []).map(b => new Barrel(b.x, b.y));
-
-    // Wire hooks used by weapons.
+  function _setupHooks() {
+    if (game._hooksReady) return;
+    game._hooksReady = true;
     game._onHitConfirmed = (enemy) => {
       hitMarker.classList.remove('on');
       void hitMarker.offsetWidth;
       hitMarker.classList.add('on');
       Sound.play('hitMarker');
     };
-    // Called by Barrel.detonate + Enemy.attack — points the damage indicator
-    // at the source and briefly shows it.
     game._onPlayerHitFrom = (sx, sy) => {
       const p = game.player;
       const ang = Math.atan2(sy - p.y, sx - p.x) - p.angle;
@@ -123,7 +118,6 @@
       game._toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
     };
     game._onEnemyKilled = (enemy) => {
-      // Kill streak.
       const now = performance.now();
       const tier = game.streak.onKill(now);
       if (tier) {
@@ -136,19 +130,63 @@
         streakPopup.classList.remove('hidden');
         Sound.play('streak', tier.freq);
       }
-      // Loot drops.
       if (window.LootSystem) {
         const drops = LootSystem.rollDrops(enemy.type, enemy.x, enemy.y);
         for (const d of drops) game.loot.push(d);
       }
     };
+  }
 
-    // Reset Rick state for a fresh playthrough.
+  function initLegacyUnused() {
+    // (kept as no-op; loadLevel does the real work now)
+  }
+
+  // Load rick sprites once (async). Safe to call multiple times.
+  // Load a level (1 or 2). Preserves score/streak/arsenal on transitions.
+  function loadLevel(idx) {
+    const L = idx === 2 ? window.LEVEL2 : window.LEVEL1;
+    game.levelIdx = idx;
+    game.map = L.map;
+    _setupHooks();
+    // Preserve inventory across transitions.
+    const carry = game._carry;
+    game.player = new Player(L.start.x, L.start.y, L.start.angle);
+    game.player.armor = carry ? carry.armor : 0;
+    game.player.score = carry ? carry.score : 0;
+    game.enemies = L.enemies.map(e => {
+      const en = new Enemy(e.x, e.y, e.type);
+      if (L.enemyHpMul) { en.hp *= L.enemyHpMul; en.maxHp *= L.enemyHpMul; }
+      if (L.enemyDamageMul) en.damage *= L.enemyDamageMul;
+      return en;
+    });
+    game.pickups = L.pickups.map(p => ({ ...p, tex: TEX.get(p.type), scale: 0.6, alive: true }));
+    game.loot = [];
+    game.barrels = (L.barrels || []).map(b => new Barrel(b.x, b.y));
+
+    if (carry) {
+      game.arsenal = carry.arsenal;
+      game.streak = carry.streak;
+      game.buffs = carry.buffs;
+    } else {
+      game.arsenal = new Arsenal();
+      game.streak = new KillStreak();
+      game.buffs = new Buffs();
+    }
+    game.weapon = game.arsenal.current();
+    game._carry = null;
+
+    // Objective setup.
+    game.objectives = L.objectives ? L.objectives.slice() : [];
+    if (idx === 1) game.objectives = [{ name: 'Find Rick Astley', x: 20, y: 3 }];
+    game.currentObjective = 0;
+    updateObjectiveBanner();
+
+    // Rick state (only relevant on level 1).
     rick.door = L.secretDoor ? { ...L.secretDoor } : null;
     rick.rickSpawn = L.rickSpawn ? { ...L.rickSpawn } : null;
     rick.slideProgress = 0;
     rick.sliding = false;
-    rick.triggered = false;
+    rick.triggered = idx !== 1;
     rick.enemy = null;
     rick.defeated = false;
     rick.musicVol = 0;
@@ -160,16 +198,189 @@
     secretTint.classList.remove('on');
     secretTint.classList.add('hidden');
     try { rickMusic.pause(); rickMusic.currentTime = 0; rickMusic.volume = 0; } catch (e) {}
+
+    // Shrek state (level 2 only).
+    shrek.spawned = false;
+    shrek.enemy = null;
+    shrek.defeated = false;
+    shrek.spawnAt = L.bossSpawn ? { ...L.bossSpawn } : null;
+    shrek.phase = 1;
+    if (idx === 2) {
+      // Cinematic intro triggers shortly after level fade completes.
+      setTimeout(() => spawnShrek(), 1200);
+    }
   }
 
-  // Load rick sprites once (async). Safe to call multiple times.
+  function updateObjectiveBanner() {
+    if (!game.objectives || !game.objectives.length) {
+      objectiveEl.classList.add('hidden');
+      return;
+    }
+    const obj = game.objectives[game.currentObjective];
+    if (!obj) { objectiveEl.classList.add('hidden'); return; }
+    objectiveEl.classList.remove('hidden');
+    objName.textContent = obj.name;
+  }
+
+  function updateObjectiveArrow() {
+    if (!game.objectives || !game.objectives.length) return;
+    const player = game.player;
+    // Advance to next objective if we're within a tile of the current one.
+    const obj = game.objectives[game.currentObjective];
+    if (!obj) return;
+    const dx = (obj.x + 0.5) - player.x;
+    const dy = (obj.y + 0.5) - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1.6 && game.currentObjective < game.objectives.length - 1) {
+      game.currentObjective++;
+      updateObjectiveBanner();
+      return;
+    }
+    const angleToObj = Math.atan2(dy, dx) - player.angle + Math.PI / 2;
+    objArrow.style.transform = `rotate(${(angleToObj * 180 / Math.PI).toFixed(1)}deg)`;
+    objDist.textContent = Math.round(dist * 3) + ' m';
+  }
+
+  // Called on state reset from start().
+  function initLevel() { loadLevel(1); }
+
+  // Shrek boss state.
+  const shrek = { spawned: false, enemy: null, defeated: false, phase: 1, musicOsc: null, musicGain: null, musicAudioCtx: null };
+
+  function spawnShrek() {
+    if (shrek.spawned || !shrek.spawnAt) return;
+    const e = new Enemy(shrek.spawnAt.x, shrek.spawnAt.y, 'shrek');
+    e.state = Enemy.STATE.CHASE;
+    game.enemies.push(e);
+    shrek.enemy = e;
+    shrek.spawned = true;
+    // Boss bar
+    bossBar.classList.remove('hidden');
+    bossBar.querySelector('.boss-label').textContent = 'SHREK';
+    bossBarInner.style.width = '100%';
+    // Cinematic burst
+    game.renderer.triggerShake(24, 900);
+    const cw = game.canvas.width, ch = game.canvas.height;
+    for (let k = 0; k < 60; k++) game.renderer.addSpark(cw/2 + (Math.random()-0.5)*300, ch/2 + (Math.random()-0.5)*200, 1);
+    // Procedural boss theme — deep drone + rhythm.
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC();
+      const drone = ctx.createOscillator(); drone.type = 'sawtooth'; drone.frequency.value = 55;
+      const rhy = ctx.createOscillator(); rhy.type = 'square'; rhy.frequency.value = 82;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+      const g = ctx.createGain(); g.gain.value = 0.0;
+      drone.connect(lp).connect(g); rhy.connect(g); g.connect(ctx.destination);
+      drone.start(); rhy.start();
+      shrek.musicAudioCtx = ctx; shrek.musicGain = g; shrek._drone = drone; shrek._rhy = rhy;
+    } catch (err) {}
+    if (game._toast) game._toast('SHREK HAS ENTERED THE SWAMP');
+  }
+
+  function updateShrek(dt) {
+    if (!shrek.enemy) return;
+    const e = shrek.enemy;
+    const player = game.player;
+    // Boss bar reflects HP.
+    const frac = Math.max(0, e.hp / e.maxHp);
+    bossBarInner.style.width = (frac * 100) + '%';
+
+    // 4 phases at 75/50/25% HP.
+    let phase = 1;
+    if (frac < 0.75) phase = 2;
+    if (frac < 0.5)  phase = 3;
+    if (frac < 0.25) phase = 4;
+    if (phase !== shrek.phase) {
+      shrek.phase = phase;
+      // Scale speed & attackRate per phase.
+      e.speed = 1.5 + phase * 0.35;
+      e.attackRate = Math.max(280, 750 - phase * 130);
+      e.damage = 22 + phase * 6;
+      if (game._toast) game._toast('SHREK PHASE ' + phase);
+      game.renderer.triggerShake(14, 600);
+    }
+
+    // Distance-based music volume.
+    if (shrek.musicGain && e.alive) {
+      const dist = Math.hypot(e.x - player.x, e.y - player.y);
+      const target = Math.max(0.05, Math.min(0.35, 0.55 - dist * 0.03));
+      shrek.musicGain.gain.value += (target - shrek.musicGain.gain.value) * 0.05;
+    }
+
+    // Death handling.
+    if (!e.alive && !shrek.defeated) {
+      shrek.defeated = true;
+      game.player.score += e.score;
+      // Fade + stop music.
+      if (shrek.musicGain) {
+        const gg = shrek.musicGain;
+        const start = gg.gain.value;
+        const step = () => {
+          gg.gain.value = Math.max(0, gg.gain.value - 0.008);
+          if (gg.gain.value > 0.001) requestAnimationFrame(step);
+          else { try { shrek._drone.stop(); shrek._rhy.stop(); } catch (e) {} }
+        };
+        requestAnimationFrame(step);
+      }
+      setTimeout(() => bossBar.classList.add('hidden'), 800);
+      // Achievement + credits.
+      achievement.classList.remove('hidden');
+      achievement.querySelector('[data-testid="achievement-name"]').textContent = 'GET OUT OF MY SWAMP!';
+      setTimeout(() => achievement.classList.add('hidden'), 3800);
+      setTimeout(showCredits, 4200);
+    }
+  }
+
+  function showCredits() {
+    creditsEl.classList.remove('hidden');
+    creditsBody.innerHTML = `
+      <div><b>DOOMFALL</b> — a retro raycasting FPS</div>
+      <div>Levels cleared: <b>2 / 2</b></div>
+      <div>Final Score: <b>${String(game.player.score).padStart(5, '0')}</b></div>
+      <div>Peak streak: <b>${game.streak.count}</b> kills</div>
+      <div style="margin-top:20px;color:#8dff8d">Bosses vanquished:</div>
+      <div>&#9642; Rick Astley &mdash; <span style="color:#4fff8a">DEFEATED</span></div>
+      <div>&#9642; Shrek &mdash; <span style="color:#4fff8a">EJECTED FROM SWAMP</span></div>
+      <div style="margin-top:20px;color:#ffb347">Thanks for playing.</div>
+    `;
+    game.running = false;
+  }
+  creditsRestart.onclick = () => { creditsEl.classList.add('hidden'); location.reload(); };
+
+  // Called when Rick corpse fully despawns — trigger LEVEL 2 transition.
+  function advanceToLevel2() {
+    if (game.levelIdx !== 1 || game._advancing) return;
+    game._advancing = true;
+    // Fade-out + level card.
+    ltSub.textContent = 'LEVEL COMPLETE';
+    ltTitle.textContent = 'LEVEL 2';
+    ltHint.textContent = 'The swamp awaits...';
+    levelTransition.classList.remove('hidden');
+    setTimeout(() => {
+      // Preserve inventory.
+      game._carry = {
+        score: game.player.score,
+        armor: game.player.armor,
+        arsenal: game.arsenal,
+        streak: game.streak,
+        buffs: game.buffs
+      };
+      loadLevel(2);
+      game._advancing = false;
+      setTimeout(() => levelTransition.classList.add('hidden'), 1400);
+    }, 2600);
+  }
   let rickTexturesReady = false;
+
   function preloadRickTextures() {
     if (rickTexturesReady) return Promise.resolve();
     return Promise.all([
       TEX.loadImageTexture('rick_idle', 'assets/rick/rick_idle.png', 128),
       TEX.loadImageTexture('rick_walk', 'assets/rick/rick_walk.png', 128),
       TEX.loadImageTexture('rick_death', 'assets/rick/rick_death.png', 128),
+      TEX.loadImageTexture('shrek_idle', 'assets/shrek/shrek_idle.png', 160),
+      TEX.loadImageTexture('shrek_walk', 'assets/shrek/shrek_walk.png', 160),
+      TEX.loadImageTexture('shrek_death', 'assets/shrek/shrek_death.png', 160),
     ]).then(() => { rickTexturesReady = true; });
   }
 
@@ -257,6 +468,8 @@
     game.streak.update(performance.now());
     game.buffs.update(performance.now());
     renderBuffStack();
+    updateObjectiveArrow();
+    updateShrek(dt);
 
     // Low health warning + heartbeat.
     if (player.health <= 30 && !player.dead) lowHealth.classList.remove('hidden');
@@ -453,6 +666,8 @@
     rick.enemy = null;
     secretTint.classList.remove('on');
     setTimeout(() => secretTint.classList.add('hidden'), 700);
+    // Rick dead — start Level 2 transition.
+    advanceToLevel2();
   }
 
   // ---- Loot pickup logic ----
