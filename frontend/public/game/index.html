@@ -56,6 +56,28 @@
     <div id="damage-flash" data-testid="damage-flash"></div>
     <div id="crosshair" data-testid="crosshair"></div>
 
+    <!-- Boss health bar (hidden until Rick spawns) -->
+    <div id="boss-bar" class="hidden" data-testid="boss-bar">
+      <div class="boss-label" id="boss-label">RICK ASTLEY</div>
+      <div class="boss-bar-outer">
+        <div class="boss-bar-inner" id="boss-bar-inner" data-testid="boss-bar-inner"></div>
+      </div>
+    </div>
+
+    <!-- "Use" prompt for the secret wall -->
+    <div id="use-prompt" class="hidden" data-testid="use-prompt">[E] OPEN</div>
+
+    <!-- Achievement popup -->
+    <div id="achievement" class="hidden" data-testid="achievement">
+      <div class="ach-inner">
+        <div class="ach-title">ACHIEVEMENT UNLOCKED</div>
+        <div class="ach-name" data-testid="achievement-name">You Got Rickrolled</div>
+      </div>
+    </div>
+
+    <!-- Secret-room ambient tint overlay -->
+    <div id="secret-tint" class="hidden" data-testid="secret-tint"></div>
+
     <div id="game-over" class="overlay hidden" data-testid="game-over">
       <h2>YOU DIED</h2>
       <button id="restart-btn" data-testid="restart-btn" class="cta">TRY AGAIN</button>
@@ -63,6 +85,7 @@
   </div>
 
   <audio id="bg-music" src="assets/audio/music.mp3" loop preload="auto"></audio>
+  <audio id="rickroll-music" src="assets/audio/rickroll.ogg" loop preload="auto" data-testid="rickroll-audio"></audio>
 
   <script src="src/engine/textures.js"></script>
   <script src="src/engine/raycaster.js"></script>

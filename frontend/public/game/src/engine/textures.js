@@ -259,10 +259,45 @@
   }
   cache._pistolCanvas = pistolCanvas;
 
+  // ---- External image loader (for Rick easter egg sprites) ----
+  function loadImageTexture(name, src, size = 128) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = size; c.height = size;
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          const s = Math.min(size / img.width, size / img.height);
+          const w = img.width * s, h = img.height * s;
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+          const imgData = ctx.getImageData(0, 0, size, size);
+          const raw = imgData.data;
+          // Color-key: turn near-white pixels transparent (in case PNG has no alpha).
+          for (let i = 0; i < raw.length; i += 4) {
+            const r = raw[i], g = raw[i + 1], b = raw[i + 2];
+            if (r > 240 && g > 240 && b > 240) raw[i + 3] = 0;
+          }
+          const arr = new Uint32Array(raw.buffer);
+          cache[name] = { w: size, h: size, data: arr };
+          resolve(cache[name]);
+        } catch (err) {
+          console.error('loadImageTexture(' + name + ') failed:', err);
+          resolve(null);
+        }
+      };
+      img.onerror = (e) => { console.error('image load failed:', src, e); resolve(null); };
+      img.src = src;
+    });
+  }
+
   window.TEX = {
     get(name) { return cache[name]; },
     all: cache,
     pistolCanvas,
-    TSIZE
+    TSIZE,
+    loadImageTexture
   };
 })();

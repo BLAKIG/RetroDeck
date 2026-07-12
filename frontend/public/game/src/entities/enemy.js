@@ -47,16 +47,18 @@
       this.range = cfg.range;
       this.attackCooldown = 0;
       this.state = STATE.IDLE;
-      this.tex = TEX.get(type);
+      // Rick has multiple textures we swap between; others use one.
+      this.tex = TEX.get(type === 'rick' ? 'rick_idle' : type);
       this.scale = cfg.scale;
       this.alive = true;
       this.hurtTime = 0;
       this.deathTime = 0;
       this.score = cfg.score;
-      this.sightRange = 14;
+      this.sightRange = type === 'rick' ? 24 : 14;
       this.attackRate = cfg.attackRate;
       this.patrolTimer = 0;
       this.patrolDir = { x: 0, y: 0 };
+      this._walkPhase = 0;
     }
 
     hit(dmg) {
@@ -65,7 +67,9 @@
       if (this.hp <= 0) {
         this.alive = false;
         this.state = STATE.DEAD;
-        this.deathTime = 400;
+        // Rick's corpse lingers noticeably longer for dramatic effect.
+        this.deathTime = this.type === 'rick' ? 4000 : 400;
+        if (this.type === 'rick') this.tex = TEX.get('rick_death') || this.tex;
       } else if (this.state === STATE.IDLE) {
         this.state = STATE.CHASE;
       }
@@ -98,6 +102,20 @@
       else if (this.state !== STATE.IDLE && !canSee) {
         // lose sight after brief chase
         this.state = STATE.IDLE;
+      }
+
+      // Rick sprite frame swap: idle when standing, walk when moving.
+      if (this.type === 'rick') {
+        const moving = this.state === STATE.CHASE || this.state === STATE.ATTACK;
+        if (moving) {
+          this._walkPhase += dt;
+          // Swap every 240ms between idle and walk to fake a step animation.
+          const swap = ((this._walkPhase / 240) | 0) % 2 === 0;
+          this.tex = TEX.get(swap ? 'rick_walk' : 'rick_idle') || this.tex;
+        } else {
+          this._walkPhase = 0;
+          this.tex = TEX.get('rick_idle') || this.tex;
+        }
       }
 
       if (this.state === STATE.CHASE || this.state === STATE.ATTACK) {
@@ -140,7 +158,9 @@
   Enemy.hasLineOfSight = hasLineOfSight;
   Enemy.CONFIG = {
     guard:   { hp: 25, speed: 1.4, damage: 8,  range: 0.9, attackRate: 900,  score: 100, scale: 0.85 },
-    soldier: { hp: 45, speed: 1.9, damage: 12, range: 0.95, attackRate: 750, score: 200, scale: 1.0 }
+    soldier: { hp: 45, speed: 1.9, damage: 12, range: 0.95, attackRate: 750, score: 200, scale: 1.0 },
+    // Special hidden boss — reuses all normal AI, just tuned differently.
+    rick:    { hp: 120, speed: 1.2, damage: 14, range: 1.0, attackRate: 850, score: 5000, scale: 1.35 }
   };
 
   window.Enemy = Enemy;

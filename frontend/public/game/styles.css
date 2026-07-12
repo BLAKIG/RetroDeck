@@ -198,3 +198,113 @@ html, body {
   text-shadow: 0 0 20px rgba(255,50,20,0.6), 4px 4px 0 #300;
   letter-spacing: 4px;
 }
+
+/* ---------- BOSS BAR ---------- */
+#boss-bar {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 70%);
+  z-index: 6;
+  font-family: 'Press Start 2P', monospace;
+  animation: bossIn 0.6s ease-out;
+}
+@keyframes bossIn {
+  from { transform: translate(-50%, -80px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+.boss-label {
+  text-align: center;
+  color: #ff5c3a;
+  font-size: 14px;
+  letter-spacing: 5px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 8px rgba(255,60,20,0.9), 3px 3px 0 #200;
+  animation: bossPulse 1.4s infinite;
+}
+@keyframes bossPulse { 50% { color: #ffb347; text-shadow: 0 0 12px rgba(255,180,71,0.9); } }
+.boss-bar-outer {
+  height: 22px;
+  background: rgba(0,0,0,0.75);
+  border: 3px solid #ff5c3a;
+  box-shadow: 0 0 24px rgba(255,50,20,0.6), 0 0 60px rgba(255,50,20,0.3) inset;
+  overflow: hidden;
+}
+.boss-bar-inner {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff2020 0%, #ff5c3a 50%, #ffb347 100%);
+  transition: width 0.25s ease-out;
+  box-shadow: 0 0 12px rgba(255,120,40,0.7) inset;
+}
+
+/* ---------- USE PROMPT ---------- */
+#use-prompt {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  color: #ffcf6a;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px rgba(255,180,71,0.9), 2px 2px 0 #200;
+  z-index: 5;
+  pointer-events: none;
+  animation: usePulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes usePulse {
+  from { transform: translate(-50%, 0) scale(1); opacity: 0.75; }
+  to { transform: translate(-50%, -6px) scale(1.05); opacity: 1; }
+}
+
+/* ---------- ACHIEVEMENT POPUP ---------- */
+#achievement {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  font-family: 'Press Start 2P', monospace;
+  animation: achIn 0.8s cubic-bezier(0.2, 1.4, 0.4, 1);
+  pointer-events: none;
+}
+@keyframes achIn {
+  0% { transform: translate(-50%, -140%) scale(0.4); opacity: 0; filter: blur(6px); }
+  60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: none; }
+}
+.ach-inner {
+  background: linear-gradient(180deg, #1a0e05 0%, #3a1a06 100%);
+  border: 3px solid #ffb347;
+  padding: 18px 32px;
+  box-shadow: 0 0 40px rgba(255,180,71,0.55), 0 8px 0 #200;
+  text-align: center;
+  min-width: 360px;
+}
+.ach-title {
+  font-size: 12px;
+  color: #ffb347;
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+  text-shadow: 0 0 8px rgba(255,180,71,0.9);
+}
+.ach-name {
+  font-size: 20px;
+  color: #ffe7b0;
+  letter-spacing: 3px;
+  text-shadow: 2px 2px 0 #200, 0 0 16px rgba(255,220,140,0.6);
+}
+
+/* ---------- SECRET ROOM TINT ---------- */
+#secret-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(ellipse at center, rgba(255,80,180,0.18) 0%, rgba(120,0,180,0.28) 60%, rgba(0,0,0,0) 100%);
+  opacity: 0;
+  transition: opacity 0.6s ease-in;
+}
+#secret-tint.on { opacity: 1; }

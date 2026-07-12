@@ -30,6 +30,11 @@
 
       // Texture refs
       this.wallTex = [null, TEX.get('brick'), TEX.get('stone'), TEX.get('metal'), TEX.get('door')];
+      // Cell value 9 = secret door (reuses the door texture for a distinct look).
+      this.wallTex[9] = TEX.get('door');
+      // Map of "x,y" -> slide progress (0..1). Populated by main.js when the
+      // secret door is opening. 0 = closed, 1 = fully sunk.
+      this.slidingDoors = new Map();
       this.floorTex = TEX.get('floor');
       this.ceilTex = TEX.get('ceiling');
     }
@@ -144,6 +149,15 @@
         const lineHeight = (rh / perpDist) | 0;
         let drawStart = -(lineHeight >> 1) + (rh >> 1);
         let drawEnd = (lineHeight >> 1) + (rh >> 1);
+
+        // Secret-door slide animation: push the top of the wall downward as
+        // the slide progresses so the wall appears to sink into the floor.
+        if (hitType === 9 && this.slidingDoors.size > 0) {
+          const key = mapX + ',' + mapY;
+          const prog = this.slidingDoors.get(key) || 0;
+          if (prog > 0) drawStart += (lineHeight * prog) | 0;
+        }
+        if (drawStart >= drawEnd) continue;
         if (drawStart < 0) drawStart = 0;
         if (drawEnd >= rh) drawEnd = rh - 1;
 
@@ -176,6 +190,8 @@
 
     /** Draw a sprite (billboard) in world space, respecting the zBuffer. */
     drawSprite(sprite, player) {
+      const tex = sprite.tex;
+      if (!tex || !tex.data) return; // guard against not-yet-loaded textures
       const { pixels, zBuffer, rw, rh, fov } = this;
       const dx = sprite.x - player.x;
       const dy = sprite.y - player.y;
@@ -204,7 +220,6 @@
       const drawEndX = Math.min(rw - 1, (spriteWidth / 2 + spriteScreenX) | 0);
 
       const shade = Math.max(0.2, Math.min(1, 1.4 - transformY * 0.08));
-      const tex = sprite.tex;
       const texData = tex.data;
       const tw = tex.w, th = tex.h;
 
