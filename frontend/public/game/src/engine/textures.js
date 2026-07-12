@@ -259,6 +259,121 @@
   }
   cache._pistolCanvas = pistolCanvas;
 
+  // ---- New weapon HUD canvases: M4, AK, Deagle, Knife ----
+  function makeWeaponCanvas(w, h, draw) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    draw(g);
+    return c;
+  }
+
+  const m4Canvas = makeWeaponCanvas(260, 180, (g) => {
+    // hands + sleeves
+    g.fillStyle = '#3a2a14'; g.fillRect(20, 130, 220, 50);
+    g.fillStyle = '#5a4218'; g.fillRect(20, 130, 220, 5);
+    g.fillStyle = '#c89878'; g.fillRect(60, 100, 40, 40); g.fillRect(160, 100, 40, 40);
+    // upper receiver
+    g.fillStyle = '#1a1a1a'; g.fillRect(50, 40, 180, 32);
+    g.fillStyle = '#2f2f2f'; g.fillRect(50, 40, 180, 4);
+    // barrel + suppressor
+    g.fillStyle = '#0a0a0a'; g.fillRect(210, 46, 40, 14);
+    g.fillStyle = '#2a2a2a'; g.fillRect(232, 44, 6, 18);
+    // rail + sight
+    g.fillStyle = '#3a3a3a'; g.fillRect(70, 34, 100, 6);
+    g.fillStyle = '#4ff0ff'; g.fillRect(120, 28, 6, 8);
+    // magazine
+    g.fillStyle = '#1a1a1a'; g.fillRect(115, 68, 22, 44);
+    g.fillStyle = '#2a2a2a'; g.fillRect(115, 68, 22, 4);
+    // grip
+    g.fillStyle = '#141414'; g.fillRect(140, 72, 20, 44);
+    // stock
+    g.fillStyle = '#1a1a1a'; g.fillRect(10, 46, 44, 20);
+  });
+
+  const akCanvas = makeWeaponCanvas(260, 180, (g) => {
+    g.fillStyle = '#3a2a14'; g.fillRect(20, 130, 220, 50);
+    g.fillStyle = '#5a4218'; g.fillRect(20, 130, 220, 5);
+    g.fillStyle = '#c89878'; g.fillRect(60, 100, 40, 40); g.fillRect(160, 100, 40, 40);
+    // Wood furniture
+    g.fillStyle = '#7a4818'; g.fillRect(30, 60, 40, 22);
+    g.fillStyle = '#8a5820'; g.fillRect(150, 74, 40, 18);
+    g.fillStyle = '#5a3812'; g.fillRect(30, 60, 40, 3);
+    // receiver
+    g.fillStyle = '#1a1a1a'; g.fillRect(70, 50, 140, 30);
+    g.fillStyle = '#3a3a3a'; g.fillRect(70, 50, 140, 3);
+    // barrel & gas block
+    g.fillStyle = '#0a0a0a'; g.fillRect(200, 54, 50, 12);
+    g.fillStyle = '#2a2a2a'; g.fillRect(180, 44, 14, 14);
+    // curved mag
+    g.fillStyle = '#4a3218'; g.fillRect(110, 78, 30, 40);
+    g.fillStyle = '#6a4818'; g.fillRect(110, 78, 30, 4);
+    g.fillStyle = '#4a3218'; g.fillRect(140, 88, 6, 30);
+    // rear sight
+    g.fillStyle = '#2a2a2a'; g.fillRect(85, 44, 6, 8);
+  });
+
+  const deagleCanvas = makeWeaponCanvas(240, 200, (g) => {
+    g.fillStyle = '#3a2a14'; g.fillRect(30, 130, 180, 60);
+    g.fillStyle = '#5a4218'; g.fillRect(30, 130, 180, 5);
+    g.fillStyle = '#c89878'; g.fillRect(80, 90, 80, 50);
+    // Gold Deagle body
+    g.fillStyle = '#b58a2a'; g.fillRect(90, 40, 100, 60);
+    g.fillStyle = '#d8a840'; g.fillRect(90, 40, 100, 6);
+    // barrel
+    g.fillStyle = '#8a6a20'; g.fillRect(160, 30, 40, 30);
+    g.fillStyle = '#c8983a'; g.fillRect(160, 30, 40, 5);
+    // slide texture
+    g.fillStyle = '#5a4212';
+    for (let i = 0; i < 5; i++) g.fillRect(100 + i * 8, 60, 3, 20);
+    // grip
+    g.fillStyle = '#2a1a08'; g.fillRect(112, 100, 40, 40);
+    g.fillStyle = '#4a2a10';
+    for (let i = 0; i < 4; i++) g.fillRect(112, 108 + i * 8, 40, 2);
+    // trigger
+    g.fillStyle = '#0a0a0a'; g.fillRect(150, 98, 16, 16);
+    // hammer
+    g.fillStyle = '#5a4212'; g.fillRect(88, 44, 8, 12);
+  });
+
+  const knifeCanvas = makeWeaponCanvas(220, 200, (g) => {
+    g.fillStyle = '#3a2a14'; g.fillRect(50, 140, 120, 50);
+    g.fillStyle = '#c89878'; g.fillRect(70, 100, 80, 50);
+    // Karambit — curved blade
+    g.fillStyle = '#e5e5e8';
+    g.beginPath();
+    g.moveTo(120, 80); g.quadraticCurveTo(210, 40, 190, 130); g.lineTo(180, 130); g.quadraticCurveTo(200, 60, 120, 90); g.closePath();
+    g.fill();
+    g.fillStyle = '#7a7a7a';
+    g.beginPath();
+    g.moveTo(120, 80); g.quadraticCurveTo(210, 40, 190, 130); g.lineTo(180, 130); g.quadraticCurveTo(200, 60, 120, 90); g.closePath();
+    g.stroke();
+    // handle
+    g.fillStyle = '#2a1a08'; g.fillRect(80, 90, 44, 44);
+    g.fillStyle = '#4a2a10';
+    for (let i = 0; i < 5; i++) g.fillRect(80, 96 + i * 8, 44, 2);
+    // finger ring
+    g.strokeStyle = '#2a1a08'; g.lineWidth = 6;
+    g.beginPath(); g.arc(70, 118, 14, 0, Math.PI * 2); g.stroke();
+    // blade glint
+    g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(140, 78); g.quadraticCurveTo(195, 60, 190, 100); g.stroke();
+  });
+
+  cache._weaponCanvases = { M4A1: m4Canvas, 'AK-47': akCanvas, 'DESERT EAGLE': deagleCanvas, KARAMBIT: knifeCanvas };
+
+  // Armor pickup sprite (blue shield-ish).
+  makeSprite('armorPickup', (ctx, S) => {
+    ctx.clearRect(0, 0, S, S);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(20, 48, 24, 4);
+    ctx.fillStyle = '#4ff0ff'; ctx.fillRect(20, 28, 24, 22);
+    ctx.fillStyle = '#2fa8d8'; ctx.fillRect(20, 44, 24, 6);
+    ctx.fillStyle = '#a8f8ff'; ctx.fillRect(20, 28, 24, 3);
+    ctx.fillStyle = '#0a1a3a'; ctx.fillRect(26, 32, 12, 14);
+    ctx.fillStyle = '#ffe57a'; ctx.fillRect(30, 34, 4, 10); ctx.fillRect(28, 38, 8, 3);
+  });
+
   // ---- External image loader (for Rick easter egg sprites) ----
   function loadImageTexture(name, src, size = 128) {
     return new Promise((resolve) => {
@@ -297,6 +412,7 @@
     get(name) { return cache[name]; },
     all: cache,
     pistolCanvas,
+    weaponCanvases: cache._weaponCanvases,
     TSIZE,
     loadImageTexture
   };

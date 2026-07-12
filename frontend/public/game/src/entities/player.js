@@ -81,6 +81,12 @@
 
     hit(dmg) {
       if (this.dead) return;
+      // Armor absorbs 65% of damage until it's depleted.
+      if (this.armor > 0) {
+        const absorbed = Math.min(this.armor, dmg * 0.65);
+        this.armor -= absorbed;
+        dmg -= absorbed;
+      }
       this.health -= dmg;
       this.hitFlashTime = 200;
       if (this.health <= 0) { this.health = 0; this.dead = true; }

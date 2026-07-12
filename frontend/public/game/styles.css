@@ -111,7 +111,7 @@ html, body {
   right: 0;
   height: 96px;
   display: grid;
-  grid-template-columns: 1fr 1fr 96px 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(9, 1fr);
   align-items: center;
   background: linear-gradient(180deg, #2a1a10 0%, #140806 100%);
   border-top: 4px solid #8a3a1a;
@@ -137,8 +137,26 @@ html, body {
   text-shadow: 2px 2px 0 #2a0a04;
 }
 .hud-value.red { color: #ff5c3a; }
+.hud-value.blue { color: #4ff0ff; }
 .hud-value.yellow { color: #ffd54a; }
 .hud-value.dim { color: #7d6a44; font-size: 14px; }
+.hud-weapons { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.weapon-slots { display: flex; gap: 6px; }
+.wslot {
+  width: 28px; height: 22px;
+  border: 2px solid #4a3a1a;
+  color: #7d6a44;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.4);
+}
+.wslot.active {
+  border-color: #ffd54a;
+  color: #ffe7b0;
+  background: rgba(80,50,10,0.6);
+  box-shadow: 0 0 10px rgba(255,213,74,0.55) inset;
+}
 .hud-face canvas {
   width: 72px;
   height: 72px;
@@ -308,3 +326,58 @@ html, body {
   transition: opacity 0.6s ease-in;
 }
 #secret-tint.on { opacity: 1; }
+
+/* ---------- HIT MARKER ---------- */
+#hit-marker {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 22px; height: 22px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+}
+#hit-marker::before, #hit-marker::after {
+  content: '';
+  position: absolute;
+  background: #ff2020;
+  box-shadow: 0 0 8px rgba(255,40,40,0.9);
+}
+#hit-marker::before { top: 0; left: 10px; width: 2px; height: 22px; }
+#hit-marker::after  { left: 0; top: 10px; height: 2px; width: 22px; }
+#hit-marker.on { animation: hitFlash 0.28s ease-out; }
+@keyframes hitFlash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); }
+  40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* ---------- STREAK POPUP ---------- */
+#streak-popup {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 12;
+  pointer-events: none;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+}
+#streak-popup .streak-count {
+  font-size: 14px;
+  color: #ffb347;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 8px rgba(255,180,71,0.9);
+}
+#streak-popup .streak-name {
+  font-size: 42px;
+  letter-spacing: 5px;
+  text-shadow: 3px 3px 0 #200, 0 0 18px currentColor;
+}
+#streak-popup.show { animation: streakIn 1.6s ease-out; }
+@keyframes streakIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-6deg); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(2deg); }
+  50% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1) rotate(0deg); }
+}

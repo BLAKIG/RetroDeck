@@ -15,6 +15,10 @@
   const usePrompt = document.getElementById('use-prompt');
   const achievement = document.getElementById('achievement');
   const secretTint = document.getElementById('secret-tint');
+  const hitMarker = document.getElementById('hit-marker');
+  const streakPopup = document.getElementById('streak-popup');
+  const streakCountTxt = document.getElementById('streak-count-txt');
+  const streakNameTxt = document.getElementById('streak-name-txt');
 
   // Set logical size to match visible area for sharp raycast target
   function fitCanvas() {
@@ -76,9 +80,45 @@
     const L = LEVEL1;
     game.map = L.map;
     game.player = new Player(L.start.x, L.start.y, L.start.angle);
+    game.player.armor = 0;
+    game.player.ammo = 999; // legacy field (unused now that Arsenal owns ammo).
     game.enemies = L.enemies.map(e => new Enemy(e.x, e.y, e.type));
     game.pickups = L.pickups.map(p => ({ ...p, tex: TEX.get(p.type), scale: 0.6, alive: true }));
-    game.weapon = new Pistol();
+    // Extra loot pool populated by enemy drops.
+    game.loot = [];
+    game.arsenal = new Arsenal();
+    game.weapon = game.arsenal.current();
+    game.streak = new KillStreak();
+
+    // Wire hooks used by weapons.
+    game._onHitConfirmed = (enemy) => {
+      hitMarker.classList.remove('on');
+      // force reflow to restart animation
+      void hitMarker.offsetWidth;
+      hitMarker.classList.add('on');
+      Sound.play('hitMarker');
+    };
+    game._onEnemyKilled = (enemy) => {
+      // Kill streak.
+      const now = performance.now();
+      const tier = game.streak.onKill(now);
+      if (tier) {
+        streakCountTxt.textContent = `${game.streak.count} KILLS`;
+        streakNameTxt.textContent = tier.name;
+        streakNameTxt.style.color = tier.color;
+        streakPopup.classList.remove('show');
+        void streakPopup.offsetWidth;
+        streakPopup.classList.add('show');
+        streakPopup.classList.remove('hidden');
+        Sound.play('streak', tier.freq);
+      }
+      // Loot drops.
+      if (window.LootSystem) {
+        const drops = LootSystem.rollDrops(enemy.type, enemy.x, enemy.y);
+        for (const d of drops) game.loot.push(d);
+      }
+    };
+
     // Reset Rick state for a fresh playthrough.
     rick.door = L.secretDoor ? { ...L.secretDoor } : null;
     rick.rickSpawn = L.rickSpawn ? { ...L.rickSpawn } : null;
@@ -168,7 +208,10 @@
       game.fps = Math.round((game.fpsFrames * 1000) / game.fpsAcc);
       game.fpsAcc = 0; game.fpsFrames = 0;
     }
-    game.hud.update(game.player, game.weapon, 1, game.fps, dt);
+    game.hud.update(game.player, game.weapon, 1, game.fps, dt, {
+      streak: game.streak ? game.streak.count : 0,
+      slot: game.arsenal ? game.arsenal.currentSlot : 1
+    });
 
     requestAnimationFrame(loop);
   }
@@ -176,9 +219,15 @@
   function update(dt, keyEvents) {
     const player = game.player;
     if (input.fire && game.weapon.fire(game)) {
-      // fire is single-shot per event; keep held for auto-repeat with cooldown
+      // Auto-fire is handled by per-weapon cooldown; keep held.
     }
     player.update(dt, input, game.map);
+
+    // Keep game.weapon in sync with the arsenal's currently equipped weapon.
+    game.weapon = game.arsenal.current();
+
+    // Kill streak decay.
+    game.streak.update(performance.now());
 
     // Footstep sfx
     if (player.bobActive) {
@@ -208,17 +257,20 @@
     // Rick death handling: bar hide + music fade + achievement popup.
     updateRick(dt);
 
-    // Pickups
+    // Pickups (auto-collect world medkits/ammo laid out in level)
     for (const p of game.pickups) {
       if (!p.alive) continue;
       const d = Math.hypot(p.x - player.x, p.y - player.y);
       if (d < 0.5) {
-        if (p.type === 'ammo') { player.ammo += 15; }
+        if (p.type === 'ammo') { game.arsenal.addAmmo('rifle', 15); }
         else if (p.type === 'medkit') { player.heal(25); }
         p.alive = false;
         Sound.play('pickup');
       }
     }
+
+    // Enemy-dropped loot: requires E press when facing it, prompt hoverable.
+    updateLoot(dt);
 
     game.weapon.update(dt, player.bobActive, input.sprint);
     game.renderer.updateParticles(dt);
@@ -353,10 +405,46 @@
   }
 
   function onRickCorpseGone() {
-    // Called when the death sprite finally despawns.
     rick.enemy = null;
     secretTint.classList.remove('on');
     setTimeout(() => secretTint.classList.add('hidden'), 700);
+  }
+
+  // ---- Loot pickup logic ----
+  let _lootPromptShown = false;
+  function updateLoot(dt) {
+    if (!game.loot) return;
+    const player = game.player;
+    let near = null;
+    for (const l of game.loot) {
+      if (!l.alive) continue;
+      const d = Math.hypot(l.x - player.x, l.y - player.y);
+      if (d < 0.7 && (!near || d < near._dist)) { near = l; near._dist = d; }
+    }
+    // Only show pickup prompt if we're NOT prompting the secret door already.
+    if (near && !usePrompt.classList.contains('show-secret')) {
+      usePrompt.textContent = '[E] PICK UP';
+      usePrompt.classList.remove('hidden');
+      _lootPromptShown = true;
+      if (input.use) {
+        applyLoot(near);
+        near.alive = false;
+        Sound.play('pickup');
+      }
+    } else if (_lootPromptShown) {
+      _lootPromptShown = false;
+      // Restore default text so the secret-door path still uses "[E] OPEN".
+      usePrompt.textContent = '[E] OPEN';
+      usePrompt.classList.add('hidden');
+    }
+    // Compact dead loot occasionally.
+    if (game.loot.length > 40) game.loot = game.loot.filter(l => l.alive);
+  }
+  function applyLoot(l) {
+    const player = game.player;
+    if (l.kind === 'ammo') game.arsenal.addAmmo('rifle', l.amount);
+    else if (l.kind === 'medkit') player.heal(l.amount);
+    else if (l.kind === 'armor') player.armor = Math.min(100, (player.armor || 0) + l.amount);
   }
 
   function render() {
@@ -375,6 +463,11 @@
       if (!p.alive) continue;
       const d2 = (p.x - game.player.x) ** 2 + (p.y - game.player.y) ** 2;
       sprites.push({ obj: p, d2, tex: p.tex, x: p.x, y: p.y, scale: p.scale });
+    }
+    if (game.loot) for (const l of game.loot) {
+      if (!l.alive) continue;
+      const d2 = (l.x - game.player.x) ** 2 + (l.y - game.player.y) ** 2;
+      sprites.push({ obj: l, d2, tex: l.tex, x: l.x, y: l.y, scale: l.scale });
     }
     sprites.sort((a, b) => b.d2 - a.d2);
     for (const s of sprites) {
@@ -407,6 +500,11 @@
     if (k in keyMap) { input[keyMap[k]] = true; e.preventDefault(); }
     if (k === ' ') { input.fire = true; e.preventDefault(); }
     if (k === 'e') { input.use = true; e.preventDefault(); }
+    if (k === 'r' && game.arsenal) { game.arsenal.reloadCurrent(); e.preventDefault(); }
+    if ((k === '1' || k === '2' || k === '3') && game.arsenal) {
+      game.arsenal.switchTo(parseInt(k, 10));
+      e.preventDefault();
+    }
     if (k === 'escape') { document.exitPointerLock && document.exitPointerLock(); }
   });
   document.addEventListener('keyup', (e) => {
@@ -415,6 +513,11 @@
     if (k === ' ') { input.fire = false; }
     if (k === 'e') { input.use = false; }
   });
+  document.addEventListener('wheel', (e) => {
+    if (!game.started || !game.arsenal) return;
+    game.arsenal.cycle(e.deltaY > 0 ? 1 : -1);
+    e.preventDefault();
+  }, { passive: false });
   document.addEventListener('mousedown', (e) => {
     if (!game.started) return;
     if (e.button === 0) input.fire = true;

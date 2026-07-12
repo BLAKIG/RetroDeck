@@ -7,21 +7,39 @@
       this.$level  = el('hud-level');
       this.$score  = el('hud-score');
       this.$health = el('hud-health');
+      this.$armor  = el('hud-armor');
       this.$ammo   = el('hud-ammo');
       this.$weapon = el('hud-weapon');
+      this.$streak = el('hud-streak');
       this.$fps    = el('hud-fps');
       this.face    = el('hud-face').getContext('2d');
       this.face.imageSmoothingEnabled = false;
       this.faceTick = 0;
+      this.$slots = document.querySelectorAll('.wslot');
     }
 
-    update(player, weapon, level, fps, dt) {
+    update(player, weapon, level, fps, dt, extras) {
       this.$level.textContent  = level;
       this.$score.textContent  = String(player.score).padStart(5, '0');
       this.$health.textContent = Math.max(0, player.health | 0);
-      this.$ammo.textContent   = player.ammo;
-      this.$weapon.textContent = weapon.name;
-      this.$fps.textContent    = fps;
+      if (this.$armor) this.$armor.textContent = Math.max(0, (player.armor || 0) | 0);
+      if (weapon) {
+        this.$weapon.textContent = weapon.name;
+        // Ammo display: mag/reserve for firearms, "∞" for the knife.
+        if (weapon.isMelee) this.$ammo.textContent = '∞';
+        else this.$ammo.textContent = `${weapon.magAmmo} / ${weapon.reserveAmmo}`;
+      }
+      this.$fps.textContent = fps;
+      if (this.$streak && extras && extras.streak) {
+        this.$streak.textContent = extras.streak;
+      }
+      // Weapon slot highlight
+      if (this.$slots && extras && typeof extras.slot === 'number') {
+        this.$slots.forEach((s) => {
+          const n = parseInt(s.dataset.slot, 10);
+          s.classList.toggle('active', n === extras.slot);
+        });
+      }
 
       this.faceTick += dt;
       if (this.faceTick > 250) {

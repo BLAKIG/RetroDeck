@@ -47,7 +47,6 @@
       this.range = cfg.range;
       this.attackCooldown = 0;
       this.state = STATE.IDLE;
-      // Rick has multiple textures we swap between; others use one.
       this.tex = TEX.get(type === 'rick' ? 'rick_idle' : type);
       this.scale = cfg.scale;
       this.alive = true;
@@ -59,6 +58,10 @@
       this.patrolTimer = 0;
       this.patrolDir = { x: 0, y: 0 };
       this._walkPhase = 0;
+      // Voice cooldowns.
+      this._voiceCool = 0;
+      this._tauntCool = 2000 + Math.random() * 3000;
+      this._sawPlayer = false;
     }
 
     hit(dmg) {
@@ -67,11 +70,16 @@
       if (this.hp <= 0) {
         this.alive = false;
         this.state = STATE.DEAD;
-        // Rick's corpse lingers noticeably longer for dramatic effect.
         this.deathTime = this.type === 'rick' ? 4000 : 400;
         if (this.type === 'rick') this.tex = TEX.get('rick_death') || this.tex;
-      } else if (this.state === STATE.IDLE) {
-        this.state = STATE.CHASE;
+        Sound.play('enemyDeath');
+      } else {
+        if (this.state === STATE.IDLE) this.state = STATE.CHASE;
+        // Hurt voice — throttled so a burst-fire doesn't spam it.
+        if (this._voiceCool <= 0) {
+          Sound.play('enemyHurt');
+          this._voiceCool = 350;
+        }
       }
     }
 
@@ -95,8 +103,23 @@
 
       if (this.hurtTime > 0) this.hurtTime -= dt;
       if (this.attackCooldown > 0) this.attackCooldown -= dt;
+      if (this._voiceCool > 0) this._voiceCool -= dt;
+      if (this._tauntCool > 0) this._tauntCool -= dt;
 
       const canSee = dist < this.sightRange && hasLineOfSight(map, this.x, this.y, player.x, player.y);
+
+      // Play "spotted" bark the first time this enemy sees the player.
+      if (canSee && !this._sawPlayer) {
+        this._sawPlayer = true;
+        Sound.play('enemySpotted');
+        this._voiceCool = 900;
+      }
+      // Combat taunts — occasional grunts while chasing.
+      if (canSee && this._tauntCool <= 0 && this._voiceCool <= 0) {
+        Sound.play('enemyTaunt');
+        this._voiceCool = 700;
+        this._tauntCool = 3000 + Math.random() * 4000;
+      }
 
       if (canSee) this.state = dist <= this.range ? STATE.ATTACK : STATE.CHASE;
       else if (this.state !== STATE.IDLE && !canSee) {

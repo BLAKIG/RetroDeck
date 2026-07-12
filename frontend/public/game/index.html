@@ -40,17 +40,35 @@
         <div class="hud-value red" id="hud-health" data-testid="hud-health">100</div>
       </div>
       <div class="hud-cell">
-        <div class="hud-label">AMMO</div>
-        <div class="hud-value yellow" id="hud-ammo" data-testid="hud-ammo">50</div>
+        <div class="hud-label">ARMOR</div>
+        <div class="hud-value blue" id="hud-armor" data-testid="hud-armor">0</div>
       </div>
       <div class="hud-cell">
-        <div class="hud-label">WEAPON</div>
-        <div class="hud-value" id="hud-weapon" data-testid="hud-weapon">PISTOL</div>
+        <div class="hud-label">AMMO</div>
+        <div class="hud-value yellow" id="hud-ammo" data-testid="hud-ammo">30 / 120</div>
+      </div>
+      <div class="hud-cell hud-weapons">
+        <div class="hud-label" id="hud-weapon" data-testid="hud-weapon">M4A1</div>
+        <div class="weapon-slots">
+          <div class="wslot" data-slot="1" data-testid="wslot-1">1</div>
+          <div class="wslot" data-slot="2" data-testid="wslot-2">2</div>
+          <div class="wslot" data-slot="3" data-testid="wslot-3">3</div>
+        </div>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">STREAK</div>
+        <div class="hud-value" id="hud-streak" data-testid="hud-streak">0</div>
       </div>
       <div class="hud-cell">
         <div class="hud-label">FPS</div>
         <div class="hud-value dim" id="hud-fps" data-testid="hud-fps">0</div>
       </div>
+    </div>
+
+    <div id="hit-marker" class="hidden" data-testid="hit-marker"></div>
+    <div id="streak-popup" class="hidden" data-testid="streak-popup">
+      <div class="streak-count" id="streak-count-txt"></div>
+      <div class="streak-name" id="streak-name-txt"></div>
     </div>
 
     <div id="damage-flash" data-testid="damage-flash"></div>
@@ -92,7 +110,20 @@
   <script src="src/engine/renderer.js"></script>
   <script src="src/entities/player.js"></script>
   <script src="src/entities/enemy.js"></script>
+  <script src="src/entities/loot.js"></script>
   <script src="src/weapons/pistol.js"></script>
+  <script src="src/weapons/arsenal.js"></script>
+  <script src="src/weapons/killstreak.js"></script>
+  <script src="src/levels/level1.js"></script>
+  <script src="src/audio/sound.js"></script>
+  <script src="src/ui/hud.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
+cript src="src/entities/loot.js"></script>
+  <script src="src/weapons/pistol.js"></script>
+  <script src="src/weapons/arsenal.js"></script>
+  <script src="src/weapons/killstreak.js"></script>
   <script src="src/levels/level1.js"></script>
   <script src="src/audio/sound.js"></script>
   <script src="src/ui/hud.js"></script>
