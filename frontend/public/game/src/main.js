@@ -119,6 +119,9 @@
     };
     game._onEnemyKilled = (enemy) => {
       const now = performance.now();
+      // Director AI — tracks recent kills.
+      if (!game.director) game.director = { kills: [], dmgTaken: 0, dmgWindow: 0 };
+      game.director.kills.push(now);
       const tier = game.streak.onKill(now);
       if (tier) {
         streakCountTxt.textContent = `${game.streak.count} KILLS`;
@@ -132,8 +135,17 @@
       }
       if (window.LootSystem) {
         const drops = LootSystem.rollDrops(enemy.type, enemy.x, enemy.y);
+        // Director-driven bonus: if player is struggling, guarantee a medkit.
+        const struggling = game.director && game.director.dmgTaken > 60 && game.director.kills.length < 3;
+        if (struggling && !drops.some(d => d.kind === 'medkit')) {
+          drops.push(LootSystem.createLoot(enemy.x, enemy.y, 'medkit', 25, drops.length));
+        }
         for (const d of drops) game.loot.push(d);
       }
+    };
+    // Gunshot alert: notify all in-range enemies (they hear + walk to LKP).
+    game.notifyGunshot = (x, y) => {
+      for (const e of game.enemies) if (e.hear) e.hear(x, y);
     };
   }
 
@@ -275,6 +287,22 @@
       shrek.musicAudioCtx = ctx; shrek.musicGain = g; shrek._drone = drone; shrek._rhy = rhy;
     } catch (err) {}
     if (game._toast) game._toast('SHREK HAS ENTERED THE SWAMP');
+  }
+
+  function updateRickPhases(dt) {
+    if (!rick.enemy || !rick.enemy.alive) return;
+    const e = rick.enemy;
+    const frac = e.hp / e.maxHp;
+    // Phase 2 at <=50% HP: faster + more damage.
+    const targetPhase = frac <= 0.5 ? 2 : 1;
+    if (rick._phase !== targetPhase) {
+      rick._phase = targetPhase;
+      if (targetPhase === 2) {
+        e.speed = 1.9; e.damage = 22; e.attackRate = 600;
+        game.renderer.triggerShake(14, 500);
+        if (game._toast) game._toast('RICK ENRAGED');
+      }
+    }
   }
 
   function updateShrek(dt) {
@@ -470,6 +498,13 @@
     renderBuffStack();
     updateObjectiveArrow();
     updateShrek(dt);
+    updateRickPhases(dt);
+    // Director: expire damage window + prune old kills.
+    if (game.director) {
+      const now = performance.now();
+      if (now > game.director.dmgWindow) game.director.dmgTaken = 0;
+      game.director.kills = game.director.kills.filter(t => now - t < 15000);
+    }
 
     // Low health warning + heartbeat.
     if (player.health <= 30 && !player.dead) lowHealth.classList.remove('hidden');
@@ -492,8 +527,12 @@
         Sound.play('hurt');
         damageFlash.classList.add('hit');
         setTimeout(() => damageFlash.classList.remove('hit'), 140);
-        game.renderer.triggerShake(e.type === 'rick' ? 12 : 6, e.type === 'rick' ? 320 : 220);
+        game.renderer.triggerShake(e.type === 'rick' ? 12 : (e.type === 'shrek' ? 16 : 6), e.type === 'rick' ? 320 : 220);
         if (game._onPlayerHitFrom) game._onPlayerHitFrom(e.x, e.y);
+        // Director tracks player damage over a rolling 8s window.
+        if (!game.director) game.director = { kills: [], dmgTaken: 0, dmgWindow: 0 };
+        game.director.dmgTaken += e.damage;
+        game.director.dmgWindow = performance.now() + 8000;
       }
       if (!e.alive && e.deathTime <= 0) {
         if (e === rick.enemy) onRickCorpseGone();

@@ -178,6 +178,19 @@
       o.connect(g).connect(c.destination);
       o.start(); o.stop(c.currentTime + 0.2);
     },
+    enemyAttack() {
+      const c = ac();
+      const o = c.createOscillator();
+      o.type = 'square';
+      const base = 180 + Math.random() * 90;
+      o.frequency.setValueAtTime(base * 1.3, c.currentTime);
+      o.frequency.linearRampToValueAtTime(base, c.currentTime + 0.08);
+      o.frequency.exponentialRampToValueAtTime(base * 0.5, c.currentTime + 0.22);
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 800; bp.Q.value = 3;
+      const g = envGain(0.005, 0.25, 0.22);
+      o.connect(bp).connect(g).connect(c.destination);
+      o.start(); o.stop(c.currentTime + 0.26);
+    },
     hurt() {
       const c = ac();
       const src = c.createBufferSource();

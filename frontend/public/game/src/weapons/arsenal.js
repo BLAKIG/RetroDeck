@@ -92,6 +92,8 @@
       game.renderer.triggerShake(this.shake || 4, this.shakeMs || 150);
       game.renderer.addShell && game.renderer.addShell();
       Sound.play(this.soundKey);
+      // Notify AI: gunshot at player's cell.
+      if (game.notifyGunshot) game.notifyGunshot(game.player.x, game.player.y);
       return true;
     }
     update(dt, moving, sprint) {

@@ -47,7 +47,7 @@
       this.range = cfg.range;
       this.attackCooldown = 0;
       this.state = STATE.IDLE;
-      this.tex = TEX.get(type === 'rick' ? 'rick_idle' : (type === 'shrek' ? 'shrek_idle' : type));
+      this.tex = TEX.get(type === 'rick' ? 'rick_idle' : (type === 'shrek' ? 'shrek_idle' : (type === 'elite' ? 'soldier' : type)));
       this.scale = cfg.scale;
       this.alive = true;
       this.hurtTime = 0;
@@ -108,6 +108,22 @@
 
       const canSee = dist < this.sightRange && hasLineOfSight(map, this.x, this.y, player.x, player.y);
 
+      // Sound-driven search state: even without LOS, walk toward LKP.
+      if (this._searchTime > 0) this._searchTime -= dt;
+      if (!canSee && this._lkp && this._searchTime > 0 && this.state !== STATE.ATTACK) {
+        // Move toward LKP; if reached, look around briefly then drop LKP.
+        const ldx = this._lkp.x - this.x, ldy = this._lkp.y - this.y;
+        const ldist = Math.hypot(ldx, ldy);
+        if (ldist < 0.6) { this._lkp = null; this._searchTime = Math.min(this._searchTime, 500); }
+        else {
+          const step = this.speed * sec;
+          const nx = (ldx / ldist) * step, ny = (ldy / ldist) * step;
+          if (this.canMove(map, this.x + nx, this.y)) this.x += nx;
+          if (this.canMove(map, this.x, this.y + ny)) this.y += ny;
+        }
+      }
+      if (this._searchTime <= 0 && !canSee) { this._lkp = null; }
+
       // Play "spotted" bark the first time this enemy sees the player.
       if (canSee && !this._sawPlayer) {
         this._sawPlayer = true;
@@ -157,6 +173,8 @@
           if (dist <= this.range && canSee) {
             player.hit(this.damage);
             this.attackCooldown = this.attackRate;
+            // Attack yell — barked less often than the taunt.
+            if (this._voiceCool <= 0) { Sound.play('enemyAttack'); this._voiceCool = 500; }
             return { attacked: true };
           }
         }
@@ -182,8 +200,9 @@
   Enemy.CONFIG = {
     guard:   { hp: 25, speed: 1.4, damage: 8,  range: 0.9, attackRate: 900,  score: 100, scale: 0.85 },
     soldier: { hp: 45, speed: 1.9, damage: 12, range: 0.95, attackRate: 750, score: 200, scale: 1.0 },
+    // Elite Soldier — tougher, faster attacks, guaranteed loot.
+    elite:   { hp: 90, speed: 2.1, damage: 18, range: 1.0, attackRate: 550, score: 500, scale: 1.1 },
     rick:    { hp: 120, speed: 1.2, damage: 14, range: 1.0, attackRate: 850, score: 5000, scale: 1.35 },
-    // Final boss — 4 phases via HP thresholds (main.js swaps speed/damage).
     shrek:   { hp: 500, speed: 1.5, damage: 22, range: 1.2, attackRate: 750, score: 25000, scale: 1.7 }
   };
 

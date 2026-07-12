@@ -14,6 +14,12 @@
       { kind: 'medkit', chance: 0.28, min: 20, max: 30 },
       { kind: 'armor',  chance: 0.18, min: 15, max: 25 }
     ],
+    // Elite — guaranteed drops on every kill.
+    elite: [
+      { kind: 'ammo',   chance: 1.0, min: 30, max: 45 },
+      { kind: 'medkit', chance: 1.0, min: 25, max: 40 },
+      { kind: 'armor',  chance: 0.8, min: 25, max: 40 }
+    ],
     rick: [
       { kind: 'ammo',   chance: 1,    min: 60, max: 90 },
       { kind: 'medkit', chance: 1,    min: 50, max: 50 },
