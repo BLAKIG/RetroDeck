@@ -28,17 +28,17 @@ window.RetroHome = (() => {
       controls: ['<b>A / D</b> or <b>Arrows</b> — move', '<b>W / Space</b> — jump', '<b>J</b> or <b>Click</b> — shoot', '<b>Fix</b> enemies to spawn temporary platforms', '<b>Esc</b> — eject']
     },
     {
-      id: 'gravityhop',
-      title: 'GRAVITY HOP',
-      genre: 'PLATFORMER',
-      tagline: 'Sync Error',
+      id: 'roadfury',
+      title: 'ROAD FURY',
+      genre: 'MOTO COMBAT',
+      tagline: 'Gig Economy Delivery Rider',
       stars: '★★★★★',
-      plays: '2.1M plays',
-      ribbon: 'CULT HIT',
-      cover: 'gravityhop',
-      lore: 'The cloud is glitching. Someone\'s memories were deleted. Collect the corrupted pixels — flip gravity to reach them all. Buffering platforms only exist when they\'re loading.',
-      meta: ['SP • 1 PLAYER', 'RATED E', 'GRAVITY-FLIP'],
-      controls: ['<b>A / D</b> or <b>Arrows</b> — move', '<b>W / Space</b> — jump', '<b>S / G</b> — flip gravity', '<b>Esc</b> — eject']
+      plays: '3.4M plays',
+      ribbon: 'HOT',
+      cover: 'roadfury',
+      lore: 'The last unlicensed food-delivery bike race. Punch rival riders, dodge cops, hit the finish line before your app times you out. 90s asphalt fury, 2026 hustle.',
+      meta: ['SP • 1 PLAYER', 'RATED M', 'PSEUDO-3D RACER'],
+      controls: ['<b>W / ↑</b> — accelerate', '<b>S / ↓</b> — brake', '<b>A D / ← →</b> — lean', '<b>Space</b> — punch rival', '<b>Shift</b> — NITRO', '<b>Esc</b> — eject']
     }
   ];
 
@@ -161,6 +161,44 @@ window.RetroHome = (() => {
       ctx.fillStyle = '#4ff0ff';
       ctx.font = '14px "VT323", monospace';
       ctx.fillText('SYNC ERROR', W/2, 48);
+    } else if (kind === 'roadfury') {
+      // Sunset sky
+      const sky = ctx.createLinearGradient(0, 0, 0, H*0.6);
+      sky.addColorStop(0, '#ff5a2a'); sky.addColorStop(0.5, '#ff2f8a'); sky.addColorStop(1, '#4a1a5a');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H*0.6);
+      // sun
+      const sun = ctx.createRadialGradient(W/2, H*0.45, 5, W/2, H*0.45, 80);
+      sun.addColorStop(0, '#ffe57a'); sun.addColorStop(1, 'rgba(255,120,60,0)');
+      ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H*0.6);
+      // Ground
+      ctx.fillStyle = '#137a3a'; ctx.fillRect(0, H*0.6, W, H*0.4);
+      // Road (perspective triangle)
+      ctx.fillStyle = '#2a2a2a';
+      ctx.beginPath();
+      ctx.moveTo(W*0.4, H*0.6); ctx.lineTo(W*0.6, H*0.6);
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+      // Lane dashes
+      ctx.fillStyle = '#f0f0f0';
+      for (let i = 0; i < 5; i++) {
+        const t = i / 5;
+        const y = H*0.6 + t * H*0.4;
+        const w = 6 + t * 40;
+        ctx.fillRect(W/2 - w/2, y, w, 4 + t*6);
+      }
+      // Bike silhouette
+      ctx.fillStyle = '#000';
+      ctx.fillRect(W*0.42, H*0.78, W*0.16, H*0.15);
+      ctx.fillRect(W*0.45, H*0.7, W*0.1, H*0.12);
+      ctx.fillStyle = '#ff2f2f';
+      ctx.fillRect(W*0.44, H*0.74, W*0.12, H*0.08);
+      // Title
+      ctx.fillStyle = '#ffb347';
+      ctx.font = 'bold 20px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('ROAD FURY', W/2, 34);
+      ctx.fillStyle = '#4ff0ff';
+      ctx.font = '14px "VT323", monospace';
+      ctx.fillText('MOTO COMBAT', W/2, 54);
     }
   }
 

@@ -32,6 +32,11 @@
     RetroHome.build(showDetail);
     RetroHome.updateSelection();
     document.getElementById('detail-back').onclick = goHome;
+    if (!goHome._keysInit) {
+      goHome._keysInit = true;
+      // Defer key listener attach so the Enter that started us doesn't auto-select.
+      setTimeout(() => RetroHome.initKeys(showDetail), 250);
+    }
   }
 
   function showDetail(cart) {
@@ -63,8 +68,8 @@
       currentGame = { teardown: () => { frame.innerHTML = ''; } };
     } else if (cart.id === 'overdrive') {
       currentGame = Overdrive.create(frame, showVictory('overdrive'), showDefeat('overdrive'));
-    } else if (cart.id === 'gravityhop') {
-      currentGame = GravityHop.create(frame, showVictory('gravityhop'), showDefeat('gravityhop'));
+    } else if (cart.id === 'roadfury') {
+      currentGame = RoadFury.create(frame, showVictory('roadfury'), showDefeat('roadfury'));
     }
   }
 
@@ -120,7 +125,6 @@
   // Boot on load
   window.addEventListener('load', () => {
     startBoot();
-    RetroHome.initKeys(showDetail);
   });
 
   // Global ESC handling in detail screen
