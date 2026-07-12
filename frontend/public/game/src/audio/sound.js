@@ -207,6 +207,36 @@
       o.connect(g).connect(c.destination);
       o.start(); o.stop(c.currentTime + 0.08);
     },
+    explode() {
+      const c = ac();
+      const src = c.createBufferSource();
+      src.buffer = noiseBuffer(0.6);
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 350;
+      const g = envGain(0.005, 0.6, 0.55);
+      src.connect(lp).connect(g).connect(c.destination);
+      src.start();
+      const o = c.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(100, c.currentTime);
+      o.frequency.exponentialRampToValueAtTime(28, c.currentTime + 0.5);
+      const g2 = envGain(0.005, 0.55, 0.4);
+      o.connect(g2).connect(c.destination);
+      o.start(); o.stop(c.currentTime + 0.55);
+    },
+    powerup() {
+      const c = ac();
+      const now = c.currentTime;
+      [660, 880, 1320].forEach((f, i) => {
+        const o = c.createOscillator();
+        o.type = 'square'; o.frequency.value = f;
+        const g = c.createGain();
+        g.gain.setValueAtTime(0, now + i * 0.06);
+        g.gain.linearRampToValueAtTime(0.2, now + i * 0.06 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.16);
+        o.connect(g).connect(c.destination);
+        o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.18);
+      });
+    },
     footstep() {
       const c = ac();
       const src = c.createBufferSource();

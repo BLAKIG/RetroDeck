@@ -71,6 +71,18 @@
       <div class="streak-name" id="streak-name-txt"></div>
     </div>
 
+    <!-- Active power-up icons + countdowns (top-right vertical stack) -->
+    <div id="buff-stack" data-testid="buff-stack"></div>
+
+    <!-- Damage direction indicator (arrow pointing at attacker source) -->
+    <div id="damage-indicator" class="hidden" data-testid="damage-indicator"></div>
+
+    <!-- Low-health warning vignette -->
+    <div id="low-health" class="hidden" data-testid="low-health"></div>
+
+    <!-- Pickup toast (bottom-center message) -->
+    <div id="toast" class="hidden" data-testid="toast"></div>
+
     <div id="damage-flash" data-testid="damage-flash"></div>
     <div id="crosshair" data-testid="crosshair"></div>
 
@@ -111,6 +123,8 @@
   <script src="src/entities/player.js"></script>
   <script src="src/entities/enemy.js"></script>
   <script src="src/entities/loot.js"></script>
+  <script src="src/entities/powerups.js"></script>
+  <script src="src/entities/barrel.js"></script>
   <script src="src/weapons/pistol.js"></script>
   <script src="src/weapons/arsenal.js"></script>
   <script src="src/weapons/killstreak.js"></script>

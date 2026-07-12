@@ -19,6 +19,10 @@
   const streakPopup = document.getElementById('streak-popup');
   const streakCountTxt = document.getElementById('streak-count-txt');
   const streakNameTxt = document.getElementById('streak-name-txt');
+  const buffStack = document.getElementById('buff-stack');
+  const damageIndicator = document.getElementById('damage-indicator');
+  const lowHealth = document.getElementById('low-health');
+  const toast = document.getElementById('toast');
 
   // Set logical size to match visible area for sharp raycast target
   function fitCanvas() {
@@ -89,14 +93,34 @@
     game.arsenal = new Arsenal();
     game.weapon = game.arsenal.current();
     game.streak = new KillStreak();
+    game.buffs = new Buffs();
+    game.barrels = (L.barrels || []).map(b => new Barrel(b.x, b.y));
 
     // Wire hooks used by weapons.
     game._onHitConfirmed = (enemy) => {
       hitMarker.classList.remove('on');
-      // force reflow to restart animation
       void hitMarker.offsetWidth;
       hitMarker.classList.add('on');
       Sound.play('hitMarker');
+    };
+    // Called by Barrel.detonate + Enemy.attack — points the damage indicator
+    // at the source and briefly shows it.
+    game._onPlayerHitFrom = (sx, sy) => {
+      const p = game.player;
+      const ang = Math.atan2(sy - p.y, sx - p.x) - p.angle;
+      damageIndicator.style.transform =
+        `translate(-50%, -50%) rotate(${(ang * 180 / Math.PI + 90).toFixed(1)}deg)`;
+      damageIndicator.classList.remove('hidden');
+      clearTimeout(game._dmgIndTimer);
+      game._dmgIndTimer = setTimeout(() => damageIndicator.classList.add('hidden'), 700);
+    };
+    game._toast = (msg) => {
+      toast.textContent = msg;
+      toast.classList.remove('show', 'hidden');
+      void toast.offsetWidth;
+      toast.classList.add('show');
+      clearTimeout(game._toastTimer);
+      game._toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
     };
     game._onEnemyKilled = (enemy) => {
       // Kill streak.
@@ -221,13 +245,22 @@
     if (input.fire && game.weapon.fire(game)) {
       // Auto-fire is handled by per-weapon cooldown; keep held.
     }
+    // Speed boost buff: temporarily raise movement speed.
+    const baseSpeed = 3.0;
+    player.moveSpeed = (game.buffs && game.buffs.has('speed')) ? baseSpeed * 1.55 : baseSpeed;
     player.update(dt, input, game.map);
 
     // Keep game.weapon in sync with the arsenal's currently equipped weapon.
     game.weapon = game.arsenal.current();
 
-    // Kill streak decay.
+    // Kill streak decay + buffs.
     game.streak.update(performance.now());
+    game.buffs.update(performance.now());
+    renderBuffStack();
+
+    // Low health warning + heartbeat.
+    if (player.health <= 30 && !player.dead) lowHealth.classList.remove('hidden');
+    else lowHealth.classList.add('hidden');
 
     // Footstep sfx
     if (player.bobActive) {
@@ -247,10 +280,22 @@
         damageFlash.classList.add('hit');
         setTimeout(() => damageFlash.classList.remove('hit'), 140);
         game.renderer.triggerShake(e.type === 'rick' ? 12 : 6, e.type === 'rick' ? 320 : 220);
+        if (game._onPlayerHitFrom) game._onPlayerHitFrom(e.x, e.y);
       }
       if (!e.alive && e.deathTime <= 0) {
         if (e === rick.enemy) onRickCorpseGone();
         game.enemies.splice(i, 1);
+      }
+    }
+
+    // Barrels: any that were shot below 0 hp explode after their fuse.
+    if (game.barrels) {
+      const now = performance.now();
+      for (const b of game.barrels) {
+        if (!b.alive && b._explodeAt && now >= b._explodeAt && !b._detonated) {
+          b._detonated = true;
+          b.detonate(game);
+        }
       }
     }
 
@@ -442,9 +487,46 @@
   }
   function applyLoot(l) {
     const player = game.player;
-    if (l.kind === 'ammo') game.arsenal.addAmmo('rifle', l.amount);
-    else if (l.kind === 'medkit') player.heal(l.amount);
-    else if (l.kind === 'armor') player.armor = Math.min(100, (player.armor || 0) + l.amount);
+    if (l.isPowerup && window.PowerUps) {
+      game.buffs.apply(l.id);
+      const def = PowerUps.DEFS[l.id];
+      Sound.play('powerup');
+      if (game._toast) game._toast(def.name + ' ACTIVE');
+      return;
+    }
+    if (l.kind === 'ammo') { game.arsenal.addAmmo('rifle', l.amount); if (game._toast) game._toast('+' + l.amount + ' AMMO'); }
+    else if (l.kind === 'medkit') { player.heal(l.amount); if (game._toast) game._toast('+' + l.amount + ' HP'); }
+    else if (l.kind === 'armor') { player.armor = Math.min(100, (player.armor || 0) + l.amount); if (game._toast) game._toast('+' + l.amount + ' ARMOR'); }
+  }
+
+  function renderBuffStack() {
+    if (!game.buffs) return;
+    const active = game.buffs.list();
+    // Clear + rebuild only when set changes (cheap comparison via ids).
+    const key = active.map(a => a.id).join(',');
+    if (buffStack._key === key) {
+      // Just update timers.
+      for (const a of active) {
+        const el = buffStack.querySelector('[data-buff="' + a.id + '"]');
+        if (el) {
+          el.querySelector('.buff-time').textContent = Math.ceil(a.remaining / 1000) + 's';
+          el.querySelector('.buff-progress').style.width = ((a.remaining / a.def.duration) * 100) + '%';
+        }
+      }
+      return;
+    }
+    buffStack._key = key;
+    buffStack.innerHTML = '';
+    for (const a of active) {
+      const el = document.createElement('div');
+      el.className = 'buff-icon';
+      el.setAttribute('data-buff', a.id);
+      el.setAttribute('data-testid', 'buff-' + a.id);
+      el.style.borderColor = a.def.color;
+      el.style.color = a.def.color;
+      el.innerHTML = `<div class="buff-glyph">${a.def.icon}</div><div class="buff-time"></div><div class="buff-progress" style="width:100%"></div>`;
+      buffStack.appendChild(el);
+    }
   }
 
   function render() {
@@ -467,7 +549,14 @@
     if (game.loot) for (const l of game.loot) {
       if (!l.alive) continue;
       const d2 = (l.x - game.player.x) ** 2 + (l.y - game.player.y) ** 2;
+      // Powerup crystals bob and rotate slightly for visual interest.
+      if (l.isPowerup) l.bob = (l.bob || 0) + 0.09;
       sprites.push({ obj: l, d2, tex: l.tex, x: l.x, y: l.y, scale: l.scale });
+    }
+    if (game.barrels) for (const b of game.barrels) {
+      if (!b.alive) continue;
+      const d2 = (b.x - game.player.x) ** 2 + (b.y - game.player.y) ** 2;
+      sprites.push({ obj: b, d2, tex: b.tex, x: b.x, y: b.y, scale: b.scale });
     }
     sprites.sort((a, b) => b.d2 - a.d2);
     for (const s of sprites) {

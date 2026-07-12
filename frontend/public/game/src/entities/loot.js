@@ -30,6 +30,12 @@
         drops.push(createLoot(x, y, r.kind, amt, drops.length));
       }
     }
+    // Power-up roll — elite for soldiers + rick, normal for guards.
+    if (window.PowerUps) {
+      const tier = (enemyType === 'soldier' || enemyType === 'rick') ? 'elite' : 'normal';
+      const puId = PowerUps.rollDropId(tier);
+      if (puId) drops.push(PowerUps.createDrop(puId, x + (Math.random() - 0.5) * 0.3, y + (Math.random() - 0.5) * 0.3));
+    }
     return drops;
   }
 

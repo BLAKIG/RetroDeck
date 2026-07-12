@@ -1,11 +1,4 @@
-/* Level 1: hand-crafted maze.
-   Legend:
-     0 = empty
-     1 = brick wall
-     2 = stone wall
-     3 = metal wall
-   Grid: 24 wide, 20 tall.
-*/
+/* Level 1. Legend: 0 empty, 1 brick, 2 stone, 3 metal, 9 secret door. */
 (function () {
   const map = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -40,7 +33,6 @@
     { x: 6.5,  y: 17.5, type: 'guard' },
     { x: 15.5, y: 15.5, type: 'guard' },
     { x: 10.5, y: 17.5, type: 'soldier' },
-    // Doubled: additional 9 enemies
     { x: 3.5,  y: 3.5,  type: 'soldier' },
     { x: 7.5,  y: 7.5,  type: 'guard' },
     { x: 11.5, y: 10.5, type: 'soldier' },
@@ -55,21 +47,30 @@
   const pickups = [
     { x: 2.5,  y: 1.5,  type: 'ammo' },
     { x: 21.5, y: 1.5,  type: 'medkit' },
-    { x: 12.5, y: 6.5,  type: 'ammo' },
     { x: 5.5,  y: 10.5, type: 'medkit' },
     { x: 18.5, y: 13.5, type: 'ammo' },
     { x: 2.5,  y: 15.5, type: 'medkit' },
+  ];
+
+  // Explosive barrels — near enemy clusters for satisfying chain kills.
+  const barrels = [
+    { x: 3.5,  y: 5.5 },   // near starting corridor guard
+    { x: 14.5, y: 5.5 },   // near stone chamber
+    { x: 15.5, y: 5.5 },   // adjacent to above => chain reaction
+    { x: 5.5,  y: 8.5 },   // main corridor
+    { x: 11.5, y: 10.5 },  // mid-map crossroads
+    { x: 6.5,  y: 15.5 },  // south passage
+    { x: 14.5, y: 17.5 },  // south passage (soldier cluster)
+    { x: 20.5, y: 15.5 },  // near far-right soldier
   ];
 
   window.LEVEL1 = {
     map,
     enemies,
     pickups,
+    barrels,
     start: { x: 1.5, y: 1.5, angle: 0 },
     name: 'B1 — LOWER CELLS',
-    // Rick Astley easter egg: secret door + hidden encounter spawn point.
-    // Door cell (below) is map[3][20] (=9). Behind it lies the metal alcove
-    // where Rick spawns. Coordinates below are worldspace (col+0.5, row+0.5).
     secretDoor: { x: 20, y: 3 },
     rickSpawn: { x: 19.5, y: 3.5 }
   };

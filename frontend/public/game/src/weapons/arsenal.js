@@ -5,43 +5,47 @@
    Knife is melee (no ammo, short range, high damage).
 */
 (function () {
-  // Shared hitscan helper used by all firearms.
+  // Shared hitscan helper used by all firearms. Considers enemies AND
+  // destructible barrels — whichever is closer along the ray wins.
   function hitscan(game, spreadRad, damage, maxDist = 22) {
     const player = game.player;
-    // Add random spread to aim direction.
     const jitter = (Math.random() - 0.5) * spreadRad * 2;
     const a = player.angle + jitter;
     const dirX = Math.cos(a), dirY = Math.sin(a);
     let closest = null, closestDist = Infinity;
-    for (const e of game.enemies) {
-      if (!e.alive) continue;
-      const dx = e.x - player.x, dy = e.y - player.y;
+    const candidates = [];
+    for (const e of game.enemies) if (e.alive) candidates.push(e);
+    if (game.barrels) for (const b of game.barrels) if (b.alive) candidates.push(b);
+    for (const t of candidates) {
+      const dx = t.x - player.x, dy = t.y - player.y;
       const along = dx * dirX + dy * dirY;
       if (along <= 0 || along > maxDist) continue;
       const perp = Math.abs(dx * -dirY + dy * dirX);
       if (perp < 0.4) {
-        if (Enemy.hasLineOfSight(game.map, player.x, player.y, e.x, e.y)) {
-          if (along < closestDist) { closestDist = along; closest = e; }
+        if (Enemy.hasLineOfSight(game.map, player.x, player.y, t.x, t.y)) {
+          if (along < closestDist) { closestDist = along; closest = t; }
         }
       }
     }
     return closest;
   }
 
-  function applyHit(game, enemy, dmg) {
+  function applyHit(game, target, dmg) {
     const cw = game.canvas.width, ch = game.canvas.height;
-    if (enemy) {
-      enemy.hit(dmg);
-      game.renderer.addBlood(cw/2, ch/2, 8);
-      game.renderer.addSpark(cw/2, ch/2, 3);
-      if (game._onHitConfirmed) game._onHitConfirmed(enemy);
-      if (!enemy.alive) {
-        game.player.score += enemy.score;
+    if (target) {
+      // Buffs: double damage.
+      const boosted = (game.buffs && game.buffs.has('double')) ? dmg * 2 : dmg;
+      target.hit(boosted);
+      game.renderer.addBlood(cw/2, ch/2, target.isBarrel ? 2 : 8);
+      game.renderer.addSpark(cw/2, ch/2, target.isBarrel ? 6 : 3);
+      if (game._onHitConfirmed) game._onHitConfirmed(target);
+      // Only count enemy kills for streak/loot — barrels handle themselves.
+      if (!target.isBarrel && !target.alive) {
+        game.player.score += target.score;
         Sound.play('enemyDeath');
-        if (game._onEnemyKilled) game._onEnemyKilled(enemy);
+        if (game._onEnemyKilled) game._onEnemyKilled(target);
       }
     } else {
-      // Miss — spark on wall.
       game.renderer.addSpark(cw/2 + (Math.random()-0.5)*40, ch/2 + (Math.random()-0.5)*20, 3);
     }
   }
@@ -72,18 +76,19 @@
         if (this.magAmmo === 0 && this.reserveAmmo > 0) this.reload();
         return false;
       }
-      this.cooldown = this.fireRate;
+      // Rapid Fire buff halves the effective fire rate.
+      const rapid = (game.buffs && game.buffs.has('rapid'));
+      this.cooldown = rapid ? this.fireRate * 0.45 : this.fireRate;
       this.recoil = 1;
       this.flashTime = this.flashDurMs;
-      this.magAmmo -= 1;
-      // Multiple pellets (shotgun-style, if pellets > 1)
+      // Infinite ammo buff: don't consume.
+      if (!(game.buffs && game.buffs.has('infammo'))) this.magAmmo -= 1;
       const pellets = this.pellets || 1;
       const spread = this.spread * (game.player.hitFlashTime > 0 ? 1.4 : 1);
       for (let i = 0; i < pellets; i++) {
         const t = hitscan(game, spread, this.damage);
         applyHit(game, t, this.damage);
       }
-      // Screen shake + shell casing
       game.renderer.triggerShake(this.shake || 4, this.shakeMs || 150);
       game.renderer.addShell && game.renderer.addShell();
       Sound.play(this.soundKey);

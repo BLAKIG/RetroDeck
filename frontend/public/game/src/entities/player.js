@@ -81,6 +81,10 @@
 
     hit(dmg) {
       if (this.dead) return;
+      // Shield buff: absorb 65% of incoming damage before touching armor.
+      if (window.__doomfall && __doomfall.game && __doomfall.game.buffs && __doomfall.game.buffs.has('shield')) {
+        dmg *= 0.35;
+      }
       // Armor absorbs 65% of damage until it's depleted.
       if (this.armor > 0) {
         const absorbed = Math.min(this.armor, dmg * 0.65);
