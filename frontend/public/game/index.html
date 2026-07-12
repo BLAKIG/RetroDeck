@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DOOMFALL — Retro FPS</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-shell" data-testid="game-shell">
+    <div id="start-screen" data-testid="start-screen">
+      <h1 class="title">DOOMFALL</h1>
+      <p class="subtitle">A retro raycasting FPS. Click to enter the maze.</p>
+      <ul class="controls">
+        <li><b>W A S D</b> / Arrows &mdash; move</li>
+        <li><b>Mouse</b> &mdash; look around</li>
+        <li><b>Shift</b> &mdash; sprint</li>
+        <li><b>Left Click</b> / <b>Space</b> &mdash; shoot</li>
+        <li><b>Esc</b> &mdash; release mouse</li>
+      </ul>
+      <button id="start-btn" data-testid="start-btn" class="cta">ENTER THE MAZE</button>
+    </div>
+
+    <canvas id="game" data-testid="game-canvas" width="960" height="540"></canvas>
+
+    <div id="hud" data-testid="hud" class="hidden">
+      <div class="hud-cell">
+        <div class="hud-label">LEVEL</div>
+        <div class="hud-value" id="hud-level" data-testid="hud-level">1</div>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">SCORE</div>
+        <div class="hud-value" id="hud-score" data-testid="hud-score">0</div>
+      </div>
+      <div class="hud-cell hud-face">
+        <canvas id="hud-face" width="72" height="72" data-testid="hud-face"></canvas>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">HEALTH</div>
+        <div class="hud-value red" id="hud-health" data-testid="hud-health">100</div>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">AMMO</div>
+        <div class="hud-value yellow" id="hud-ammo" data-testid="hud-ammo">50</div>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">WEAPON</div>
+        <div class="hud-value" id="hud-weapon" data-testid="hud-weapon">PISTOL</div>
+      </div>
+      <div class="hud-cell">
+        <div class="hud-label">FPS</div>
+        <div class="hud-value dim" id="hud-fps" data-testid="hud-fps">0</div>
+      </div>
+    </div>
+
+    <div id="damage-flash" data-testid="damage-flash"></div>
+    <div id="crosshair" data-testid="crosshair"></div>
+
+    <div id="game-over" class="overlay hidden" data-testid="game-over">
+      <h2>YOU DIED</h2>
+      <button id="restart-btn" data-testid="restart-btn" class="cta">TRY AGAIN</button>
+    </div>
+  </div>
+
+  <audio id="bg-music" src="assets/audio/music.mp3" loop preload="auto"></audio>
+
+  <script src="src/engine/textures.js"></script>
+  <script src="src/engine/raycaster.js"></script>
+  <script src="src/engine/renderer.js"></script>
+  <script src="src/entities/player.js"></script>
+  <script src="src/entities/enemy.js"></script>
+  <script src="src/weapons/pistol.js"></script>
+  <script src="src/levels/level1.js"></script>
+  <script src="src/audio/sound.js"></script>
+  <script src="src/ui/hud.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

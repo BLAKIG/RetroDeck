@@ -1,0 +1,147 @@
+/* Enemy AI: idle -> chase (LOS) -> attack -> hurt/death.
+   Line-of-sight via DDA against wall map. Simple corridor pathing:
+   move toward player, but if blocked, slide along wall. */
+(function () {
+  const STATE = { IDLE: 0, CHASE: 1, ATTACK: 2, HURT: 3, DEAD: 4 };
+
+  function hasLineOfSight(map, x1, y1, x2, y2) {
+    // DDA
+    const dx = x2 - x1, dy = y2 - y1;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 0.001) return true;
+    const rx = dx / dist, ry = dy / dist;
+
+    let mapX = x1 | 0, mapY = y1 | 0;
+    const deltaDistX = Math.abs(1 / rx);
+    const deltaDistY = Math.abs(1 / ry);
+    let stepX, stepY, sideDistX, sideDistY;
+    if (rx < 0) { stepX = -1; sideDistX = (x1 - mapX) * deltaDistX; }
+    else { stepX = 1; sideDistX = (mapX + 1 - x1) * deltaDistX; }
+    if (ry < 0) { stepY = -1; sideDistY = (y1 - mapY) * deltaDistY; }
+    else { stepY = 1; sideDistY = (mapY + 1 - y1) * deltaDistY; }
+
+    let traveled = 0;
+    let iter = 0;
+    while (iter++ < 64) {
+      if (sideDistX < sideDistY) {
+        traveled = sideDistX; sideDistX += deltaDistX; mapX += stepX;
+      } else {
+        traveled = sideDistY; sideDistY += deltaDistY; mapY += stepY;
+      }
+      if (traveled >= dist) return true;
+      if (mapY < 0 || mapY >= map.length || mapX < 0 || mapX >= map[0].length) return false;
+      if (map[mapY][mapX] > 0) return false;
+    }
+    return true;
+  }
+
+  class Enemy {
+    constructor(x, y, type = 'guard') {
+      this.x = x; this.y = y;
+      this.type = type;
+      const cfg = Enemy.CONFIG[type];
+      this.hp = cfg.hp;
+      this.maxHp = cfg.hp;
+      this.speed = cfg.speed;
+      this.damage = cfg.damage;
+      this.range = cfg.range;
+      this.attackCooldown = 0;
+      this.state = STATE.IDLE;
+      this.tex = TEX.get(type);
+      this.scale = cfg.scale;
+      this.alive = true;
+      this.hurtTime = 0;
+      this.deathTime = 0;
+      this.score = cfg.score;
+      this.sightRange = 14;
+      this.attackRate = cfg.attackRate;
+      this.patrolTimer = 0;
+      this.patrolDir = { x: 0, y: 0 };
+    }
+
+    hit(dmg) {
+      this.hp -= dmg;
+      this.hurtTime = 120;
+      if (this.hp <= 0) {
+        this.alive = false;
+        this.state = STATE.DEAD;
+        this.deathTime = 400;
+      } else if (this.state === STATE.IDLE) {
+        this.state = STATE.CHASE;
+      }
+    }
+
+    canMove(map, nx, ny) {
+      const r = 0.25;
+      const cx1 = (nx - r) | 0, cx2 = (nx + r) | 0;
+      const cy1 = (ny - r) | 0, cy2 = (ny + r) | 0;
+      if (cx1 < 0 || cy1 < 0 || cy2 >= map.length || cx2 >= map[0].length) return false;
+      return map[cy1][cx1] === 0 && map[cy1][cx2] === 0
+          && map[cy2][cx1] === 0 && map[cy2][cx2] === 0;
+    }
+
+    update(dt, player, map) {
+      if (!this.alive) {
+        this.deathTime -= dt;
+        return;
+      }
+      const sec = dt / 1000;
+      const dx = player.x - this.x, dy = player.y - this.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (this.hurtTime > 0) this.hurtTime -= dt;
+      if (this.attackCooldown > 0) this.attackCooldown -= dt;
+
+      const canSee = dist < this.sightRange && hasLineOfSight(map, this.x, this.y, player.x, player.y);
+
+      if (canSee) this.state = dist <= this.range ? STATE.ATTACK : STATE.CHASE;
+      else if (this.state !== STATE.IDLE && !canSee) {
+        // lose sight after brief chase
+        this.state = STATE.IDLE;
+      }
+
+      if (this.state === STATE.CHASE || this.state === STATE.ATTACK) {
+        // Move toward player
+        const nx = dx / (dist || 1) * this.speed * sec;
+        const ny = dy / (dist || 1) * this.speed * sec;
+
+        if (dist > 0.9) {
+          if (this.canMove(map, this.x + nx, this.y)) this.x += nx;
+          else if (this.canMove(map, this.x + Math.sign(nx) * 0.05, this.y)) this.x += Math.sign(nx) * 0.05;
+          if (this.canMove(map, this.x, this.y + ny)) this.y += ny;
+          else if (this.canMove(map, this.x, this.y + Math.sign(ny) * 0.05)) this.y += Math.sign(ny) * 0.05;
+        }
+
+        if (this.state === STATE.ATTACK && this.attackCooldown <= 0) {
+          if (dist <= this.range && canSee) {
+            player.hit(this.damage);
+            this.attackCooldown = this.attackRate;
+            return { attacked: true };
+          }
+        }
+      } else if (this.state === STATE.IDLE) {
+        // Simple patrol wandering
+        this.patrolTimer -= dt;
+        if (this.patrolTimer <= 0) {
+          this.patrolTimer = 1200 + Math.random() * 1500;
+          const a = Math.random() * Math.PI * 2;
+          this.patrolDir = { x: Math.cos(a), y: Math.sin(a) };
+        }
+        const px = this.patrolDir.x * (this.speed * 0.35) * sec;
+        const py = this.patrolDir.y * (this.speed * 0.35) * sec;
+        if (this.canMove(map, this.x + px, this.y)) this.x += px; else this.patrolTimer = 0;
+        if (this.canMove(map, this.x, this.y + py)) this.y += py; else this.patrolTimer = 0;
+      }
+      return null;
+    }
+  }
+
+  Enemy.STATE = STATE;
+  Enemy.hasLineOfSight = hasLineOfSight;
+  Enemy.CONFIG = {
+    guard:   { hp: 25, speed: 1.4, damage: 8,  range: 0.9, attackRate: 900,  score: 100, scale: 0.85 },
+    soldier: { hp: 45, speed: 1.9, damage: 12, range: 0.95, attackRate: 750, score: 200, scale: 1.0 }
+  };
+
+  window.Enemy = Enemy;
+})();
